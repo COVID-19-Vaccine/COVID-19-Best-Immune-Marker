@@ -1,0 +1,296 @@
+---
+title: "inactivated_virus"
+author: "Haoxuan Fu"
+date: "2021/11/8"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Live virus
+
+```{r}
+setwd("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/inactivated virus")
+```
+
+```{r}
+library(dplyr)
+library(pryr)
+library(sjPlot)
+library(ggplot2)
+library(ggtext)
+library(ggpubr)
+library(patchwork)
+library(ggh4x)
+```
+
+## Inactivated Virus
+
+```{r}
+coronavac_nab <- read.csv("Assessment_CoronaVac.csv")
+inactivated_sars_cov_2_nab <- read.csv("Assessment_Inactivated_SARS-CoV-2_vaccine.csv")
+whole_virion_inactivated_nab <- read.csv("Assessment_Whole-Virion_Inactivated_SARS-CoV-2_Vaccine (BBV152).csv")
+```
+
+
+```{r}
+coronavac_nab <- aggregate(coronavac_nab$mean, list(coronavac_nab$assessment), FUN = mean)
+
+colnames(coronavac_nab) <- c("Assessment", "coronavac_nab")
+
+inactivated_sars_cov_2_nab <- aggregate(inactivated_sars_cov_2_nab$mean, list(inactivated_sars_cov_2_nab$assessment), FUN = mean)
+
+colnames(inactivated_sars_cov_2_nab) <- c("Assessment", "inactivated_sars_cov_2_nab")
+
+whole_virion_inactivated_nab <- aggregate(whole_virion_inactivated_nab$mean, list(whole_virion_inactivated_nab$assessment), FUN = mean)
+
+colnames(whole_virion_inactivated_nab) <- c("Assessment", "whole_virion_inactivated_nab")
+```
+
+
+```{r}
+subplot_inactivate_nab %<a-%{
+plot(whole_virion_inactivated_nab$whole_virion_inactivated_nab ~ whole_virion_inactivated_nab$Assessment, type = "o", col = "blueviolet", xlab = "Assessment time", ylab = NA, ylim = c(0,4), lwd = 3, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5);
+
+lines(coronavac_nab$coronavac_nab ~ coronavac_nab$Assessment, type = "o", col = "green2", lwd = 3);
+
+lines(inactivated_sars_cov_2_nab$inactivated_sars_cov_2_nab ~ inactivated_sars_cov_2_nab$Assessment, type = "o", col = "red2", lwd = 3);
+}
+```
+
+
+
+## RNA based vaccine
+
+```{r}
+BNT162b2_nab <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/RNA based vaccine/Assessment_BNT162b2.csv")
+mRNA_1273_nab <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/RNA based vaccine/Assessment_mRNA-1273.csv")
+
+BNT162b2_nab <- aggregate(BNT162b2_nab$mean, list(BNT162b2_nab$assessment), FUN = mean)
+
+colnames(BNT162b2_nab) <- c("Assessment", "BNT162b2_nab")
+
+mRNA_1273_nab <- aggregate(mRNA_1273_nab$mean, list(mRNA_1273_nab$assessment), FUN = mean)
+
+colnames(mRNA_1273_nab) <- c("Assessment", "mRNA_1273_nab")
+```
+
+```{r}
+subplot_rna_based_nab %<a-%{
+  plot(BNT162b2_nab$BNT162b2_nab ~ BNT162b2_nab$Assessment, type = "o", col = "darkorange", xlab = "Assessment time", ylab = NA, ylim = c(0,4), lwd = 3, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5);
+  lines(mRNA_1273_nab$mRNA_1273_nab ~ mRNA_1273_nab$Assessment, type = "o", col = "navyblue", lwd = 3)
+}
+```
+
+## Viral Vector
+
+```{r}
+Ad26_nab <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/viral vector/Assessment_Ad26.COV2.S.csv")
+
+ChAdOx1_nab <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/viral vector/Assessment_ChAdOx1-S - (AZD1222).csv")
+
+Gam_covid_nab <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/live virus/viral vector/Assessment_Gam-COVID-Vac.csv")
+
+Ad26_nab <- aggregate(Ad26_nab$mean, list(Ad26_nab$assessment), FUN = mean)
+
+colnames(Ad26_nab) <- c("Assessment", "Ad26_nab")
+
+ChAdOx1_nab <- aggregate(ChAdOx1_nab$mean, list(ChAdOx1_nab$assessment), FUN = mean)
+
+colnames(ChAdOx1_nab) <- c("Assessment", "ChAdOx1_nab")
+
+Gam_covid_nab <- aggregate(Gam_covid_nab$mean, list(Gam_covid_nab$assessment), FUN = mean)
+
+colnames(Gam_covid_nab) <- c("Assessment", "Gam_covid_nab")
+```
+
+
+```{r}
+subplot_viral_vector_nab %<a-% {
+  plot(Ad26_nab$Ad26_nab ~ Ad26_nab$Assessment, type = "o", col = "turquoise", xlab = "Assessment time", ylab = NA, ylim = c(0,4), xlim = c(0,70), cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5, lwd = 3);
+  lines(ChAdOx1_nab$ChAdOx1_nab ~ ChAdOx1_nab$Assessment, type = "o", col = "lightskyblue", lwd = 3);
+  lines(Gam_covid_nab$Gam_covid_nab ~ Gam_covid_nab$Assessment, type = "o", col = "springgreen4", lwd = 3);
+}
+```
+
+# RBD-IgG
+
+## inactivated virus
+
+```{r}
+BBV152_IgG <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/RBD-IgG/inactivated virus/Assessment_RBD-IgG_BBV152.CSV")
+
+coronavac_IgG <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/RBD-IgG/inactivated virus/Assessment_RBD-IgG_CoronaVac.CSV")
+
+WIV01_IgG <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/RBD-IgG/inactivated virus/Assessment_RBD-IgG_WIV04 and HB02.CSV")
+
+BBV152_IgG <- aggregate(BBV152_IgG$mean, list(BBV152_IgG$assessment), FUN = mean)
+
+colnames(BBV152_IgG) <- c("Assessment", "IgG")
+
+coronavac_IgG <- aggregate(coronavac_IgG$mean, list(coronavac_IgG$assessment), FUN = mean)
+
+colnames(coronavac_IgG) <- c("Assessment", "IgG")
+
+WIV01_IgG <- aggregate(WIV01_IgG$mean, list(WIV01_IgG$assessment), FUN = mean)
+
+colnames(WIV01_IgG) <- c("Assessment", "IgG")
+```
+
+
+```{r}
+subplot_inactivate_igg %<a-% {
+  plot(BBV152_IgG$IgG ~ BBV152_IgG$Assessment, type = "o", col = "blueviolet", xlab = "Assessment time", ylab = NA, ylim = c(0, 4), lwd = 3, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5);
+  lines(coronavac_IgG$IgG ~ coronavac_IgG$Assessment, type = "o", col = "green2", lwd = 3);
+  lines(WIV01_IgG$IgG ~ WIV01_IgG$Assessment, type = "o", col = "red2", lwd = 3);
+}
+```
+
+## RNA based vaccine
+
+```{r}
+BNT162b2_IgG <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/RBD-IgG/RNA based vaccine/Assessment_RBD-IgG_BNT162b2.CSV")
+
+mRNA_1273_IgG <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/RBD-IgG/RNA based vaccine/Assessment_RBD-IgG_mRNA-1273.CSV")
+
+BNT162b2_IgG <- aggregate(BNT162b2_IgG$mean, list(BNT162b2_IgG$assessment), FUN = mean)
+colnames(BNT162b2_IgG) <- c("Assessment", "IgG")
+
+mRNA_1273_IgG <- aggregate(mRNA_1273_IgG$mean, list(mRNA_1273_IgG$assessment), FUN = mean)
+colnames(mRNA_1273_IgG) <- c("Assessment", "IgG")
+```
+
+
+```{r}
+subplot_rna_based_igg %<a-% {
+  plot(mRNA_1273_IgG$IgG ~ mRNA_1273_IgG$Assessment, type = "o", col = "navyblue", xlab = "Assessment time", ylab = NA, ylim = c(1,6), lwd = 3, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5);
+  lines(BNT162b2_IgG$IgG ~ BNT162b2_IgG$Assessment, type = "o", col = "darkorange", lwd = 3);
+}
+```
+
+# Spike
+
+```{r}
+sars_cov_2_rs_spike <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/spike/Assessment_sars_cov_2_rs-spike.csv")
+
+whole_virion_inactivated_spike <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/spike/Assessment_Whole-Virion_Inactivated_SARS-spike.csv")
+
+ChAdOx1_spike <- read.csv("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)/Assessment_for_plot/assessment/spike/ChAdOx1-S - (AZD1222)-spike.csv")
+```
+
+
+```{r}
+sars_cov_2_rs_spike <- aggregate(sars_cov_2_rs_spike$mean, list(sars_cov_2_rs_spike$assessment), FUN = mean)
+colnames(sars_cov_2_rs_spike) <- c("Assessment", "Spike")
+
+whole_virion_inactivated_spike <- aggregate(whole_virion_inactivated_spike$mean, list(whole_virion_inactivated_spike$assessment), FUN = mean)
+colnames(whole_virion_inactivated_spike) <- c("Assessment", "Spike")
+
+ChAdOx1_spike <- aggregate(ChAdOx1_spike$mean, list(ChAdOx1_spike$assessment), FUN = mean)
+colnames(ChAdOx1_spike) <- c("Assessment", "Spike")
+```
+
+
+```{r}
+subplot_spike %<a-% {
+  plot(sars_cov_2_rs_spike$Spike ~ sars_cov_2_rs_spike$Assessment, type = "o", col = "darkorchid2", xlab = "Assessment time", ylab = NA, xlim = c(0,60), ylim = c(0,5), lwd = 3, cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5);
+  lines(whole_virion_inactivated_spike$Spike ~ whole_virion_inactivated_spike$Assessment, type = "o", col = "blueviolet", lwd = 3);
+  lines(ChAdOx1_spike$Spike ~ ChAdOx1_spike$Assessment, type ="o", col = "lightskyblue", lwd = 3);
+}
+```
+
+
+# Combine the Results
+```{r}
+png(filename = "test.png", res = 300, width = 4000, height = 5000)
+par(mfrow = c(3,2), mar = c(4, 4, 4, 4))
+subplot_inactivate_nab
+subplot_rna_based_nab
+subplot_viral_vector_nab 
+subplot_inactivate_igg
+subplot_rna_based_igg
+subplot_spike
+dev.off()
+```
+
+## Second Version
+
+```{r}
+subplot_inactivate_virus_nab <- ggplot(data = whole_virion_inactivated_nab) + 
+  labs(y = "Neutralizing Ab to SARS", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = whole_virion_inactivated_nab), colour = "blueviolet", data = whole_virion_inactivated_nab) +
+  geom_point(aes(x = Assessment, y = whole_virion_inactivated_nab), colour = "blueviolet", data = whole_virion_inactivated_nab) +
+  geom_line(aes(x = Assessment, y = inactivated_sars_cov_2_nab), colour = "red2", data = inactivated_sars_cov_2_nab) + 
+  geom_point(aes(x = Assessment, y = inactivated_sars_cov_2_nab), colour = "red2", data = inactivated_sars_cov_2_nab) + 
+  geom_line(aes(x = Assessment, y = coronavac_nab), colour = "green2",data = coronavac_nab) + 
+  geom_point(aes(x = Assessment, y = coronavac_nab), colour = "green2", data = coronavac_nab) +
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50")) + coord_cartesian(xlim = c(0, 125))
+```
+
+
+```{r}
+subplot_rna_based_vaccine_nab <- ggplot(data = BNT162b2_nab) +
+  labs(y = "Neutralizing Ab to SARS", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = BNT162b2_nab), colour = "darkorange", data = BNT162b2_nab) + 
+  geom_point(aes(x = Assessment, y = BNT162b2_nab), colour = "darkorange", data = BNT162b2_nab) +
+  geom_line(aes(x = Assessment, y = mRNA_1273_nab), colour = "navyblue", data = mRNA_1273_nab) +
+  geom_point(aes(x = Assessment, y = mRNA_1273_nab), colour = "navyblue", data = mRNA_1273_nab) +
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50")) + coord_cartesian(ylim = c(0.5, 3.5))
+```
+
+
+```{r}
+subplot_viral_vector_vaccine_nab <- ggplot(data = Ad26_nab) + 
+  labs(y = "Neutralizing Ab to SARS", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = Ad26_nab), colour = "turquoise", data = Ad26_nab) +
+  geom_point(aes(x = Assessment, y = Ad26_nab), colour = "turquoise", data = Ad26_nab) + 
+  geom_line(aes(x = Assessment, y = ChAdOx1_nab), colour = "lightskyblue", data = ChAdOx1_nab) +
+  geom_point(aes(x = Assessment, y = ChAdOx1_nab), colour = "lightskyblue", data = ChAdOx1_nab) +
+  geom_line(aes(x = Assessment, y = Gam_covid_nab), colour = "springgreen4", data = Gam_covid_nab) +
+  geom_point(aes(x = Assessment, y = Gam_covid_nab), colour = "springgreen4", data = Gam_covid_nab) +
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50"))
+```
+
+
+```{r}
+subplot_inactivate_virus_igg <- ggplot(data = BBV152_IgG) +
+  labs(y = "RBD-IgG", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = IgG), colour = "blueviolet", data = BBV152_IgG) +
+  geom_point(aes(x = Assessment, y = IgG), colour = "blueviolet", data = BBV152_IgG) +
+  geom_point(aes(x = Assessment, y = IgG), colour = "green2", data = coronavac_IgG) +
+  geom_line(aes(x = Assessment, y = IgG), colour = "green2", data = coronavac_IgG) +
+  geom_line(aes(x = Assessment, y = IgG), colour = "red2", data = WIV01_IgG) +
+  geom_point(aes(x = Assessment, y = IgG), colour = "red2", data = WIV01_IgG) + 
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50"))
+```
+
+
+```{r}
+subplot_rna_based_vaccine_igg <- ggplot(data = BNT162b2_IgG) +
+  labs(y = "RBD-IgG", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = IgG), colour = "darkorange", data = BNT162b2_IgG) +
+  geom_point(aes(x = Assessment, y = IgG), colour = "darkorange", data = BNT162b2_IgG) +
+  geom_line(aes(x = Assessment, y = IgG), colour = "navyblue", data = mRNA_1273_IgG) +
+  geom_point(aes(x = Assessment, y = IgG), colour = "navyblue", data = mRNA_1273_IgG) +
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50"))
+```
+
+```{r}
+subplot_vaccine_spike <- ggplot(data = sars_cov_2_rs_spike) +
+  labs(y = "Spike", x = "Assessment time") +
+  geom_line(aes(x = Assessment, y = Spike), colour = "darkorchid2", data = sars_cov_2_rs_spike) +
+  geom_point(aes(x = Assessment, y = Spike), colour = "darkorchid2", data = sars_cov_2_rs_spike) +
+  geom_line(aes(x = Assessment, y = Spike), colour = "blueviolet", data = whole_virion_inactivated_spike) +
+  geom_point(aes(x = Assessment, y = Spike), colour = "blueviolet", data = whole_virion_inactivated_spike) +
+  geom_line(aes(x = Assessment, y = Spike), colour = "lightskyblue", data = ChAdOx1_spike) +
+  geom_point(aes(x = Assessment, y = Spike), colour = "lightskyblue", data = ChAdOx1_spike) +
+  scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown(), panel.background = element_rect(fill = "white", colour = "grey50"))
+```
+
+## Combine all the results
+```{r}
+png("test.png", res = 300, width = 3000, height = 3500)
+ggarrange(subplot_inactivate_virus_nab, subplot_inactivate_virus_igg, subplot_rna_based_vaccine_nab, subplot_rna_based_vaccine_igg, subplot_viral_vector_vaccine_nab, subplot_vaccine_spike, nrow = 3, ncol = 2, labels = c("A", "B", "C", "D", "E", "F"))
+dev.off()
+```
+
