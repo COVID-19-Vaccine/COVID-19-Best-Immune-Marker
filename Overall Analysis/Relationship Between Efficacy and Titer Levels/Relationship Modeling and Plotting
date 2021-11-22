@@ -1,0 +1,274 @@
+---
+title: "Overall Result(No Subgroup)"
+author: "Haoxuan Fu"
+date: "2021/10/28"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+# DEMO
+
+## Loading the packages needed
+
+```{r include=FALSE}
+library(sjPlot)
+library(ggplot2)
+library(ggtext)
+library(ggpubr)
+library(patchwork)
+```
+
+## Setting working Directory
+
+```{r}
+setwd("C:/Users/82347/Desktop/Terms_Storage/2021_Fall/COVID19 Prep/Clinic/Prep Data/total(no subgroup)")
+```
+
+
+## Loading the data set
+
+```{r}
+NAB_to_SARS <- read.csv("neutralising Ab to live SARS-Cov-2.csv")
+IgG <- read.csv("RBD-IgG.csv")
+NAB_to_pse <- read.csv("neutralising Ab to pseudovirus.csv")
+spike <- read.csv("Spike.csv")
+```
+
+## Prepare the function for Monte Carlo Simulation
+
+```{r}
+Monte_carlo_acc <- function(dataset, mean, sd, n, protection, vaccine_type){
+  new_data <- cbind(rnorm(mean = mean, sd = sd, n = n), rep(protection, n), rep(vaccine_type, n))
+  return(rbind(dataset, new_data))
+}
+```
+
+## Prepare the Bootstrap Method
+
+```{r}
+bootstrap <- function(boot_dataset, conf_level, formula, num_of_sim, num_of_obs, select_col, from = 0, to = 5) {
+  total_boot_dataset <- as.data.frame(matrix(nrow = 1000, ncol=num_of_sim))
+  titer_seq <- seq(from = from, to = to, length.out = 1000)
+  for (i in 1: num_of_sim) {
+    boot_gene_dataset <- as.data.frame(matrix(nrow = 0, ncol = 3))
+    boot_dataset["sampling_size"] = round(boot_dataset["n"]/sum(boot_dataset["n"])*num_of_obs, digits = 0)
+    for (j in 1: nrow(boot_dataset)) {
+      if(boot_dataset$Vaccine_Type[j] == "Gam-COVID-Vac") {
+        next
+      }
+      boot_gene_dataset <- Monte_carlo_acc(boot_gene_dataset, boot_dataset[j, 2], boot_dataset[j, 3], boot_dataset$sampling_size[j], boot_dataset[j,5], boot_dataset[j,1])
+    }
+    colnames(boot_gene_dataset) <- c(select_col, "Protection", "Vaccine_Type")
+    
+    boot_gene_dataset[select_col] <- as.numeric(as.matrix(boot_gene_dataset[select_col]))
+    boot_gene_dataset$Protection <- as.numeric(boot_gene_dataset$Protection)
+    model <- lm(formula = formula, data = boot_gene_dataset)
+    new_data <- data.frame(titer_seq)
+    colnames(new_data) <- c(select_col)
+    pred_interval <- 1/(1+exp(-predict(model, newdata = new_data, interval = "confidence", level = 1-conf_level)))
+    total_boot_dataset[, i] <- as.data.frame(pred_interval)$fit
+  }
+  
+  boot_result_dataset <- as.data.frame(matrix(nrow = 1000, ncol = 3))
+  colnames(boot_result_dataset) <- c(select_col, "LCI", "UCI")
+  boot_result_dataset[select_col] <- titer_seq
+  for (k in 1:1000) {
+   boot_result_dataset$LCI[k] <- quantile(total_boot_dataset[k,], probs = conf_level/2, na.rm = TRUE)
+   boot_result_dataset$UCI[k] <- quantile(total_boot_dataset[k,], probs = (1- conf_level/2), na.rm = TRUE)
+  }
+  return (boot_result_dataset)
+}
+```
+
+
+## Generate the data from Monte Carlo
+
+1. Here goes the Neutralizing Antibody to SARS!
+
+Notice that we excluded the Gam-COVID-Vac  Adeno-based (rAd26-S+rAd5-S) here.
+
+```{r}
+NAB_sars <- as.data.frame(matrix(nrow = 0, ncol = 3))
+for (j in 1:24) {
+  if (NAB_to_SARS$Vaccine_Type[j] == "Gam-COVID-Vac") {
+    next
+  }
+  NAB_sars <- Monte_carlo_acc(NAB_sars, NAB_to_SARS[j, 2], NAB_to_SARS[j, 3], NAB_to_SARS[j, 4], NAB_to_SARS[j, 5], NAB_to_SARS[j, 1])
+}
+
+colnames(NAB_sars) <- c("NAB", "Protection", "Vaccine_Type")
+
+NAB_sars$NAB <- as.numeric(NAB_sars$NAB)
+NAB_sars$Protection <- as.numeric(NAB_sars$Protection)
+```
+
+Constructing the model:
+
+```{r}
+NAB_to_SARS_model <- lm(log(Protection/(1-Protection)) ~ NAB, data = NAB_sars)
+tab_model(NAB_to_SARS_model, pred.labels = c("Intercept", "Neutraling Ab to SARS"),show.se = TRUE, show.stat = TRUE, dv.labels = c("Summary Table for Efficacy with Neutralizing Ab"), digits = 5, p.style = "stars", collapse.ci = TRUE)
+```
+
+Perform the bootstrap for confidence interval:
+
+```{r}
+formula = log(Protection/(1-Protection)) ~ NAB
+boot_ci <- bootstrap(NAB_to_SARS, conf_level = 0.05, formula = formula, num_of_sim = 1000, num_of_obs = 200, select_col = "NAB")
+```
+
+Plotting the resulting relationship:
+
+```{r}
+plot_fun_nab_sars <- function(x) {
+  return(1/(1+exp(-(NAB_to_SARS_model$coefficients[1] + NAB_to_SARS_model$coefficients[2]*x))))
+}
+
+newx <- seq(from = 0, to = 5, length.out = 1000)
+pred_fit <- 1/(1+exp(-predict(NAB_to_SARS_model, newdata = data.frame(NAB=newx))))
+pred_interval_nab_sars <- as.data.frame(cbind(pred_fit, boot_ci$LCI, boot_ci$UCI))
+pred_interval_nab_sars$NAB = newx
+colnames(pred_interval_nab_sars) <- c("Protection", "LCI", "UCI", "NAB")
+
+plot_nab_sars <- ggplot(NAB_sars, aes(x = NAB, y = Protection)) + geom_point(aes(colour = Vaccine_Type), size = 2, alpha = 0.1) + labs(y = "Efficacy", x = "Neutralizing Ab") + theme_classic() + stat_function(fun = plot_fun_nab_sars, colour = "forestgreen", size = 1) + geom_ribbon(data = pred_interval_nab_sars, aes(ymin = LCI, ymax = UCI), fill = "orange", alpha = 0.2) + scale_x_continuous(labels = function(x){return(paste0("10^", x))}) + theme(axis.text.x = element_markdown()) + scale_color_manual(values = c("blueviolet", "darkorange", "lightskyblue", "green2", "navyblue", "red2"))
+```
+
+2. Here goes the RBG-IgG!
+
+```{r}
+prep_igg <- as.data.frame(matrix(nrow = 0, ncol = 3))
+for (j in 1:17) {
+  if(IgG$Vaccine_Type[j] ==  "Gam-COVID-Vac") {
+    next
+  }
+  prep_igg <- Monte_carlo_acc(prep_igg, IgG[j, 2], IgG[j, 3], IgG[j, 4], IgG[j, 5], IgG[j, 1])
+}
+
+colnames(prep_igg) <- c("IgG", "Protection", "Vaccine_Type")
+prep_igg$IgG <- as.numeric(prep_igg$IgG)
+prep_igg$Protection <- as.numeric(prep_igg$Protection)
+```
+
+Construct the model:
+
+```{r}
+rbd_igg_model <- lm(log(Protection/(1-Protection)) ~ IgG, data = prep_igg)
+tab_model(rbd_igg_model, pred.labels = c("Intercept", "RBD-IgG"),show.se = TRUE, show.stat = TRUE, dv.labels = c("Summary Table for Efficacy with RBD-IgG"), digits = 5, p.style = "stars", collapse.ci = TRUE)
+```
+
+Perform the Bootstrap for confidence interval:
+
+```{r}
+formula = log(Protection/(1-Protection)) ~ IgG
+boot_ci <- bootstrap(IgG, conf_level = 0.05, formula = formula, num_of_sim = 1000, num_of_obs = 200, select_col = "IgG", from = 0, to = 7)
+```
+
+
+Plotting the resulting relationship:
+
+```{r}
+plot_fun_igg <- function(x) {
+  return(1/(1+exp(-(rbd_igg_model$coefficients[1] + rbd_igg_model$coefficients[2]*x))))
+}
+
+newx <- seq(from = 0, to = 7, length.out = 1000)
+pred_fit <- 1/(1+exp(-predict(rbd_igg_model, newdata = data.frame(IgG=newx))))
+pred_interval_igg <- as.data.frame(cbind(pred_fit, boot_ci$LCI, boot_ci$UCI))
+pred_interval_igg$IgG = newx
+colnames(pred_interval_igg) <- c("Protection", "LCI", "UCI", "IgG")
+
+plot_rbd_igg <- ggplot(prep_igg, aes(x = IgG, y = Protection)) + geom_point(aes(colour = Vaccine_Type), size = 2, alpha = 1/10) + labs(y = "Efficacy", x = "IgG") + theme_classic() + stat_function(fun = plot_fun_igg, colour = "forestgreen", size = 1) + geom_ribbon(data=pred_interval_igg, aes(ymin = LCI, ymax = UCI), fill = "orange", alpha = 0.2) + scale_x_continuous(labels = function(x){return(paste0("10^", x))}) + theme(axis.text.x = element_markdown()) + scale_color_manual(values = c("blueviolet", "green2", "navyblue", "red2"))
+```
+
+3. Here goes the neutralising Ab to pseudovirus
+
+```{r}
+prep_nab_pse <- as.data.frame(matrix(nrow = 0, ncol = 3))
+for (j in 1:7) {
+  prep_nab_pse <- Monte_carlo_acc(prep_nab_pse, NAB_to_pse[j, 2], NAB_to_pse[j, 3], NAB_to_pse[j, 4], NAB_to_pse[j, 5], NAB_to_pse[j, 1])
+}
+
+colnames(prep_nab_pse) <- c("PSE", "Protection", "Vaccine_Type")
+prep_nab_pse$PSE <- as.numeric(prep_nab_pse$PSE)
+prep_nab_pse$Protection <- as.numeric(prep_nab_pse$Protection)
+```
+
+Construct the model:
+
+```{r}
+NAB_to_pse_model <- lm(log(Protection/(1-Protection)) ~ PSE, data = prep_nab_pse)
+tab_model(NAB_to_pse_model, pred.labels = c("Intercept", "Neutraling Ab to PSE"),show.se = TRUE, show.stat = TRUE, dv.labels = c("Summary Table for Efficacy with Neutralizing to PSE"), digits = 5, p.style = "stars", collapse.ci = TRUE)
+```
+
+Perform the bootstrap method:
+```{r}
+formula = log(Protection/(1-Protection)) ~ PSE
+boot_ci <- bootstrap(NAB_to_pse, conf_level = 0.05, formula = formula, num_of_sim = 1000, num_of_obs = 200, select_col = "PSE", from = 0, to = 4)
+```
+
+
+Plotting the resulting relationship:
+
+```{r}
+plot_fun_pse <- function(x) {
+  return(1/(1+exp(-(NAB_to_pse_model$coefficients[1] + NAB_to_pse_model$coefficients[2]*x))))
+}
+
+newx <- seq(from = 0, to = 4, length.out = 1000)
+pred_fit <- 1/(1+exp(-predict(NAB_to_pse_model, newdata = data.frame(PSE=newx))))
+pred_interval_pse <- as.data.frame(cbind(pred_fit, boot_ci$LCI, boot_ci$UCI))
+pred_interval_pse$PSE = newx
+colnames(pred_interval_pse) <- c("Protection", "LCI", "UCI", "PSE")
+
+plot_nab_pse <- ggplot(prep_nab_pse, aes(x = PSE, y = Protection)) + geom_point(aes(color = Vaccine_Type), size = 2, alpha = 1/10) + labs(y = "Efficacy", x = "PSE") + theme_classic() + stat_function(fun = plot_fun_pse, colour = "forestgreen", size = 1) + geom_ribbon(data=pred_interval_pse, aes(ymin = LCI, ymax = UCI), fill = "orange", alpha = 0.2) + scale_x_continuous(labels = function(x){return(paste0("10^", x))}) + theme(axis.text.x = element_markdown()) + scale_color_manual(values = c("green2", "navyblue", "red2"))
+```
+
+4. Here goes the Ab to spike glycoprotein
+
+```{r}
+prep_spike <- as.data.frame(matrix(nrow = 0, ncol = 3))
+for (j in 1:5) {
+  prep_spike <- Monte_carlo_acc(prep_spike, spike[j, 2], spike[j, 3], spike[j, 4], spike[j, 5], spike[j, 1])
+}
+
+colnames(prep_spike) <- c("spike", "Protection", "Vaccine_Type")
+
+prep_spike$spike <- as.numeric(prep_spike$spike)
+prep_spike$Protection <- as.numeric(prep_spike$Protection)
+```
+
+Perform the bootstrap method:
+```{r}
+formula = log(Protection/(1-Protection)) ~ spike
+boot_ci <- bootstrap(spike, conf_level = 0.05, formula = formula, num_of_sim = 1000, num_of_obs = 200, select_col = "spike", from = 0, to = 6)
+```
+
+Construct the model:
+
+```{r}
+model_spike <- lm(log(Protection/(1 - Protection)) ~ spike, data = prep_spike)
+tab_model(model_spike, pred.labels = c("Intercept", "Spike"),show.se = TRUE, show.stat = TRUE, dv.labels = c("Summary Table for Efficacy with Spike"), digits = 5, p.style = "stars", collapse.ci = TRUE)
+```
+
+Plotting the resulting Relationship:
+
+```{r}
+plot_fun_spike <- function(x) {
+  return(1/(1+exp(-(model_spike$coefficients[1] + model_spike$coefficient[2]*x))))
+}
+
+newx <- seq(from = 0, to = 6, length.out = 1000)
+pred_fit <- 1/(1+exp(-predict(model_spike, newdata = data.frame(spike=newx))))
+pred_interval_spike <- as.data.frame(cbind(pred_fit, boot_ci$LCI, boot_ci$UCI))
+pred_interval_spike$spike = newx
+colnames(pred_interval_spike) <- c("Protection", "LCI", "UCI", "spike")
+
+plot_spike <- ggplot(prep_spike, aes(x = spike, y = Protection)) + geom_point(aes(color = Vaccine_Type), size = 2, alpha = 1/10) + labs(y = "Efficacy", x = "spike") + theme_classic() + stat_function(fun = plot_fun_spike, colour = "forestgreen", size = 1) + geom_ribbon(data=pred_interval_spike, aes(ymin = LCI, ymax = UCI), fill = "orange", alpha = 0.2) + scale_x_continuous(labels = function(x){return(paste0("10^", x))}) + theme(axis.text.x = element_markdown()) + scale_color_manual(values = c("blueviolet", "lightskyblue", "darkorchid2"))
+```
+
+
+```{r}
+png("overall.png", res = 300, width = 4000, height = 2000)
+ggarrange(plot_nab_sars, plot_rbd_igg, plot_nab_pse, plot_spike, ncol = 2, nrow = 2, common.legend = TRUE, legend = "right")
+dev.off()
+```
+
