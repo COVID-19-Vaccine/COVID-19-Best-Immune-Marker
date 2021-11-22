@@ -1,0 +1,110 @@
+---
+title: "Assessment_spike"
+author: "Haoxuan Fu"
+date: "2021/11/7"
+output: html_document
+---
+
+# The Relationship between Vaccine-induced Antibodies and assessment date
+
+```{r}
+library(sjPlot)
+library(ggplot2)
+library(ggtext)
+library(ggpubr)
+```
+
+## Prepare the assessment data set
+
+```{r}
+whole_virion_sars_spike_assessment <- read.csv("Assessment_Whole-Virion_Inactivated_SARS-spike.csv")
+
+sars_cov_2_rs_spike_assessment <- read.csv("Assessment_sars_cov_2_rs-spike.csv")
+
+ChAdOx1_spike_assessment <- read.csv("ChAdOx1-S - (AZD1222)-spike.csv")
+```
+
+## Prepare the Monte Carlo simulation function
+
+```{r}
+Monte_carlo_assessment <- function(dataset, mean, sd, n, assessment, vaccine_type){
+  new_data <- cbind(rnorm(mean = mean, sd = sd, n = n), rep(assessment, n), rep(vaccine_type, n))
+  return(rbind(dataset, new_data))
+}
+```
+
+## Whole-Virion_Inactivated_SARS
+
+```{r}
+gene_whole_virion <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:5) {
+  gene_whole_virion <- Monte_carlo_assessment(gene_whole_virion, whole_virion_sars_spike_assessment[j, 2], whole_virion_sars_spike_assessment[j, 3], whole_virion_sars_spike_assessment[j, 4], whole_virion_sars_spike_assessment[j, 5], whole_virion_sars_spike_assessment[j, 1])
+}
+colnames(gene_whole_virion) <- c("Spike", "Assessment", "Vaccine_Type")
+gene_whole_virion$Assessment <- as.numeric(gene_whole_virion$Assessment)
+gene_whole_virion$Spike <- as.numeric(gene_whole_virion$Spike)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_whole_virion <- lm(Spike ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_whole_virion)
+
+plot_assessment_whole_virion <- function(x) {
+  return(model_assessment_whole_virion$coefficients[1] + model_assessment_whole_virion$coefficients[2]*x + model_assessment_whole_virion$coefficients[3]*x^2 + model_assessment_whole_virion$coefficients[4]*x^3)
+}
+
+ggplot(gene_whole_virion, aes(x = Assessment, y = Spike)) + geom_point(colour = 'dodgerblue', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_whole_virion, colour = "coral1") + ggtitle("Relationship Between Assessment and Spike\nfor Whole-Virion_Inactivated_SARS") + labs(y = "Spike", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
+
+
+## sars_cov_2_rs
+
+```{r}
+gene_cov_2_rs <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:4) {
+  gene_cov_2_rs <- Monte_carlo_assessment(gene_cov_2_rs, sars_cov_2_rs_spike_assessment[j, 2], sars_cov_2_rs_spike_assessment[j, 3], sars_cov_2_rs_spike_assessment[j, 4], sars_cov_2_rs_spike_assessment[j, 5], sars_cov_2_rs_spike_assessment[j, 1])
+}
+colnames(gene_cov_2_rs) <- c("Spike", "Assessment", "Vaccine_Type")
+gene_cov_2_rs$Assessment <- as.numeric(gene_cov_2_rs$Assessment)
+gene_cov_2_rs$Spike <- as.numeric(gene_cov_2_rs$Spike)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_cov_2_rs <- lm(Spike ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_cov_2_rs)
+
+plot_assessment_whole_virion <- function(x) {
+  return(model_assessment_cov_2_rs$coefficients[1] + model_assessment_cov_2_rs$coefficients[2]*x + model_assessment_cov_2_rs$coefficients[3]*x^2 + model_assessment_cov_2_rs$coefficients[4]*x^3)
+}
+
+ggplot(gene_cov_2_rs, aes(x = Assessment, y = Spike)) + geom_point(colour = 'dodgerblue', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_whole_virion, colour = "coral1") + ggtitle("Relationship Between Assessment and Spike\nfor sars_cov_2_rs") + labs(y = "Spike", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
+
+## ChAdOx1-S - (AZD1222)
+
+```{r}
+gene_ChAdOx1 <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:10) {
+  gene_ChAdOx1 <- Monte_carlo_assessment(gene_ChAdOx1, ChAdOx1_spike_assessment[j, 2], ChAdOx1_spike_assessment[j, 3], ChAdOx1_spike_assessment[j, 4], ChAdOx1_spike_assessment[j, 5], ChAdOx1_spike_assessment[j, 1])
+}
+colnames(gene_ChAdOx1) <- c("Spike", "Assessment", "Vaccine_Type")
+gene_ChAdOx1$Assessment <- as.numeric(gene_ChAdOx1$Assessment)
+gene_ChAdOx1$Spike <- as.numeric(gene_ChAdOx1$Spike)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_ChAd0x1 <- lm(Spike ~ Assessment + I(Assessment^3), data = gene_ChAdOx1)
+
+plot_assessment_ChAd0x1 <- function(x) {
+  return(model_assessment_ChAd0x1$coefficients[1] + model_assessment_ChAd0x1$coefficients[2]*x + model_assessment_ChAd0x1$coefficients[3]*x^3)
+}
+
+ggplot(gene_ChAdOx1, aes(x = Assessment, y = Spike)) + geom_point(colour = 'dodgerblue', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_ChAd0x1, colour = "coral1") + ggtitle("Relationship Between Assessment and Spike\nfor ChAdOx1") + labs(y = "Spike", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
