@@ -1,0 +1,150 @@
+---
+title: "Assessment"
+author: "Haoxuan Fu"
+date: "2021/11/6"
+output: html_document
+---
+# The Relationship between Vaccine-induced Antibodies and assessment date
+
+```{r}
+library(sjPlot)
+library(ggplot2)
+library(ggtext)
+library(ggpubr)
+```
+
+## Prepare the assessment data set
+
+```{r}
+inactivate_sars_assessment <- read.csv("Assessment_Inactivated_SARS-CoV-2_vaccine.csv")
+
+coronavac_assessment <- read.csv("Assessment_CoronaVac.csv")
+
+whole_vir_assessment <- read.csv("Assessment_Whole-Virion_Inactivated_SARS-CoV-2_Vaccine (BBV152).csv")
+
+mrna_assessment <- read.csv("Assessment_mRNA-1273.csv")
+```
+
+## Prepare the Monte Carlo simulation function
+
+```{r}
+Monte_carlo_assessment <- function(dataset, mean, sd, n, assessment, vaccine_type){
+  new_data <- cbind(rnorm(mean = mean, sd = sd, n = n), rep(assessment, n), rep(vaccine_type, n))
+  return(rbind(dataset, new_data))
+}
+```
+
+## Neutralizing Ab to SARS-2
+
+```{r}
+gene_inactivate_sars <- as.data.frame(matrix(nrow = 0, ncol = 3))
+inactivate_sars_assessment = inactivate_sars_assessment[inactivate_sars_assessment$assessment >= 21,]
+for (j in 1:nrow(inactivate_sars_assessment)) {
+  gene_inactivate_sars <- Monte_carlo_assessment(gene_inactivate_sars, inactivate_sars_assessment[j, 2], inactivate_sars_assessment[j, 3], inactivate_sars_assessment[j, 4], inactivate_sars_assessment[j, 5], inactivate_sars_assessment[j, 1])
+}
+colnames(gene_inactivate_sars) <- c("NAB", "Assessment", "Vaccine_Type")
+gene_inactivate_sars$Assessment <- as.numeric(gene_inactivate_sars$Assessment)
+gene_inactivate_sars$NAB <- as.numeric(gene_inactivate_sars$NAB)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_inactivate_sars <- lm(NAB ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_inactivate_sars)
+
+plot_assessment_inactivate_sars <- function(x) {
+  return(model_assessment_inactivate_sars$coefficients[1] + model_assessment_inactivate_sars$coefficients[2]*x + model_assessment_inactivate_sars$coefficients[3]*x^2 + model_assessment_inactivate_sars$coefficients[4]*x^3)
+}
+
+inactivate_sars_nab_plot <- ggplot(gene_inactivate_sars, aes(x = Assessment, y = NAB)) + geom_point(colour = 'red2', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_inactivate_sars, colour = "dodgerblue") + ggtitle("Relationship Between Assessment and NAB SARS\nfor Inactivated SARS-CoV-2 vaccine (Vero cell)") + labs(y = "Neutralizing Ab to SARS", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
+
+
+```{r}
+png("Inactivated_sars_cov_2_nab_assessment.png", res = 300, width = 2000, height = 1000)
+inactivate_sars_nab_plot
+dev.off()
+```
+
+
+## CoronaVac
+
+```{r}
+gene_coronavac <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:30) {
+  gene_coronavac <- Monte_carlo_assessment(gene_coronavac, coronavac_assessment[j, 2], coronavac_assessment[j, 3], coronavac_assessment[j, 4], coronavac_assessment[j, 5], coronavac_assessment[j, 1])
+}
+colnames(gene_coronavac) <- c("NAB", "Assessment", "Vaccine_Type")
+gene_coronavac$Assessment <- as.numeric(gene_coronavac$Assessment)
+gene_coronavac$NAB <- as.numeric(gene_coronavac$NAB)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_coronavac <- lm(NAB ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_coronavac)
+
+plot_assessment_coronavac <- function(x) {
+  return(model_assessment_coronavac$coefficients[1] + model_assessment_coronavac$coefficients[2]*x + model_assessment_coronavac$coefficients[3]*x^2 + model_assessment_coronavac$coefficients[4]*x^3)
+}
+
+ggplot(gene_coronavac, aes(x = Assessment, y = NAB)) + geom_point(colour = 'dodgerblue', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_coronavac, colour = "coral1") + ggtitle("Relationship Between Assessment and NAB_SARS\nfor CoronaVac") + labs(y = "NAB SARS", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
+
+## Whole-Virion_Inactivated_SARS-CoV-2_Vaccine (BBV152)
+
+```{r}
+gene_whole_virion <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:15) {
+  gene_whole_virion <- Monte_carlo_assessment(gene_whole_virion, whole_vir_assessment[j, 2], whole_vir_assessment[j, 3], whole_vir_assessment[j, 4], whole_vir_assessment[j, 5], whole_vir_assessment[j, 1])
+}
+colnames(gene_whole_virion) <- c("NAB", "Assessment", "Vaccine_Type")
+gene_whole_virion$Assessment <- as.numeric(gene_whole_virion$Assessment)
+gene_whole_virion$NAB <- as.numeric(gene_whole_virion$NAB)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_whole_virion <- lm(NAB ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_whole_virion)
+
+plot_assessment_whole_virion <- function(x) {
+  return(model_assessment_whole_virion$coefficients[1] + model_assessment_whole_virion$coefficients[2]*x + model_assessment_whole_virion$coefficients[3]*x^2 + model_assessment_whole_virion$coefficients[4]*x^3)
+}
+
+whole_virion_nab_plot <- ggplot(gene_whole_virion, aes(x = Assessment, y = NAB)) + geom_point(colour = 'blueviolet', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_whole_virion, colour = "dodgerblue") + ggtitle("Relationship Between Assessment and NAB SARS\nfor Whole-Virion Inactivated SARS-CoV-2 Vaccine") + labs(y = "NAB SARS", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
+
+```{r}
+png("whole_virion_nab_assessment.png", res = 300, width = 2000, height = 1000)
+whole_virion_nab_plot
+dev.off()
+```
+
+
+## mRNA-1273
+
+```{r}
+gene_mrna <- as.data.frame(matrix(nrow = 0, ncol = 3))
+
+for (j in 1:31) {
+  gene_mrna <- Monte_carlo_assessment(gene_mrna, mrna_assessment[j, 2], mrna_assessment[j, 3], mrna_assessment[j, 4], mrna_assessment[j, 5], mrna_assessment[j, 1])
+}
+colnames(gene_mrna) <- c("NAB", "Assessment", "Vaccine_Type")
+gene_mrna$Assessment <- as.numeric(gene_mrna$Assessment)
+gene_mrna$NAB <- as.numeric(gene_mrna$NAB)
+```
+
+## Construct the model for the relationship
+
+```{r}
+model_assessment_rmna <- lm(NAB ~ Assessment + I(Assessment^2) + I(Assessment^3), data = gene_mrna)
+
+plot_assessment_mrna <- function(x) {
+  return(model_assessment_rmna$coefficients[1] + model_assessment_rmna$coefficients[2]*x + model_assessment_rmna$coefficients[3]*x^2 + model_assessment_rmna$coefficients[4]*x^3)
+}
+
+ggplot(gene_mrna, aes(x = Assessment, y = NAB)) + geom_point(colour = 'dodgerblue', size = 2, alpha = 1/10) + stat_function(fun = plot_assessment_mrna, colour = "coral1") + ggtitle("Relationship Between Assessment and NAB_SARS\nfor mRNA-1273") + labs(y = "NAB SARS", x = "Assessment") + theme_classic()  + scale_y_continuous(labels = function(y){return(paste0("10^", y))}) + theme(axis.text.y = element_markdown())
+```
